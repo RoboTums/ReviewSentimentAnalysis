@@ -19,20 +19,18 @@ page_soup=soup(page_html,"html.parser")
 containers = page_soup.findAll('div',{'id':"reviews-items"})
 
 #create list of reviews
-reviews = containers[0].findAll(('div',
-	{'class':'col width-100 large-up-width-3-4 xlarge-up-width-13-16 xlarge-up-padding-left-medium'})
-	 )
+reviews = containers[0].findAll('div',{'class':'border-all border--gray-xlight radius padding-large single-review margin-top-medium margin-bottom-large'})
 num_reviews = range(len(reviews)) # to iterate, also index.
 reviewData = pd.DataFrame(columns=columns, index=num_reviews)
 
 # for each review, grab feedback and text
 feedBackMaster = []
 for i in num_reviews:
-	reviewFeedback = reviews[i].findAll('div',{'class':'review-title title-with-image margin-top-xsmalltext-2'})[0].find("span",{'class':'text--italic'}).text
-	feedBackMaster.append(reviewFeedback)
+	feedBackMaster.append(reviews[i].findAll('div',{'class':'review-title title-with-image margin-top-xsmall text-2'})[0].text)  
+	
 #strip all
 feedBackMaster = [feedBackMaster[i].strip().strip('.') for i in range(len(feedBackMaster))] 
-review-title title-with-image margin-top-xsmall text-2
+#review-title title-with-image margin-top-xsmall text-2
 #process review
 for i in num_reviews:
 	progressStatus = feedBackMaster[i].find('completed')
