@@ -9,6 +9,8 @@ from selenium import webdriver
 from selenium.common.exceptions import ElementNotInteractableException
 from classCentralCourse import classCentralCourse
 class classCentralSubjectScraper:
+    classCentralSubjectList = ['https://www.class-central.com/subject/cs','https://www.class-central.com/subject/business','https://www.class-central.com/subject/data-science','https://www.class-central.com/subject/programming-and-software-development','https://www.class-central.com/subject/maths']
+   
 	def __init__(self,url,CourseListOfSubjects=None,urlList=None):
 		self.url = url
 		self.urlList=[]
@@ -26,7 +28,18 @@ class classCentralSubjectScraper:
 	def setListofCourseObj(self,newList):
 		self.CourseListOfSubjects = newList
 		return
-
+    def scrapeAllUrlLocations(self):
+        urlLoc = self.classCentralSubjectList
+        massUrl = []
+        for subj in range(len(urlLoc)):
+            massUrl.append(getCourseUrls(urlLoc[subj]))
+        #remove duplicates
+        panUrl = pd.Series(massUrl, index=['url']).unique().tolist()
+        self.setUrlList(panUrl)
+       
+    def exportListofCourseUrls(self):
+        toExport = pd.DataFrame(self.getUrlList(),columns=['url'])
+        toExport.to_csv(
 	def getCourseUrls(self):
 		driver = webdriver.Firefox()
 		driver.get(self.url)
