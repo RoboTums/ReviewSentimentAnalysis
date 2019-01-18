@@ -15,7 +15,7 @@ from classCentralCourse import classCentralCourse
 
 class classCentralEncoder(json.JSONEncoder):
     # overrided the standard JSONEncoder's default() method
-    def default(self, course):
+    def default(self, course, fileCreation=True):
         if isinstance(course, classCentralCourse):
             #print('triggered')
             filename = str(course.name) + '.json'
@@ -30,8 +30,10 @@ class classCentralEncoder(json.JSONEncoder):
                 'url': course.url,
                 'numAdditionalInfo': course.numAdditionalInfo,
             }
-            with open(filename, 'w') as outfile:
-                json.dump(jsonReady, outfile)
+            if fileCreation:
+                with open(filename, 'w') as outfile:
+                    json.dump(jsonReady, outfile)
+                    
             return jsonReady
         else:
             super().default(self, course)
