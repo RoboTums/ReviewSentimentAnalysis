@@ -15,7 +15,11 @@ from classCentralCourse import classCentralCourse
 
 class classCentralEncoder(json.JSONEncoder):
     # overrided the standard JSONEncoder's default() method
-    def default(self, course, fileCreation=True):
+    def __init__(self, fileCreation=True):
+        super().__init__()
+        self.fileCreation = fileCreation
+    def default(self, course):
+
         if isinstance(course, classCentralCourse):
             #print('triggered')
             filename = str(course.name) + '.json'
@@ -28,12 +32,12 @@ class classCentralEncoder(json.JSONEncoder):
                 'provider': course.provider,
                 'attributes': course.attributes,
                 'url': course.url,
-                'numAdditionalInfo': course.numAdditionalInfo,
+                'numAdditionalInfo': course.numAdditionalInfo
             }
-            if fileCreation:
+            if self.fileCreation:
                 with open(filename, 'w') as outfile:
-                    json.dump(jsonReady, outfile)
-                    
+                   json.dump(jsonReady, outfile)
+
             return jsonReady
         else:
             super().default(self, course)
@@ -42,10 +46,7 @@ class classCentralEncoder(json.JSONEncoder):
 # decodes course from json
 class classCentralDecoder:
         # takes in json file name
-    def decodeJson(self,Json):
-        decoded = classCentralCourse('jsonToParse')
-
-        def unpack(courseJson, decoded):
+    def unpack(self,courseJson, decoded):
             decoded.name = courseJson['name']
             decoded.relatedCourses = courseJson['relatedCourses']
             decoded.reviews = pd.read_json(
@@ -56,23 +57,46 @@ class classCentralDecoder:
             decoded.url = courseJson['url']
             decoded.numAdditionalInfo = courseJson['numAdditionalInfo']
             return decoded
+    def decodeJsonString(self,JsonString):
+        decoded = classCentralCourse('jsonToParse')
+        #print(repr(JsonString))
+        data = json.loads(JsonString)
+        
+        decoded = self.unpack(data,decoded)
+        return decoded
+    def decodeJsonFile(self,Json):
+        decoded = classCentralCourse('jsonToParse')
+        
         with open(Json) as courseJson:
             data = courseJson.read()
+            #print('data type is ', type(data))
             data = json.loads(data)
-            decoded = unpack(data, decoded)
+            decoded = self.unpack(data, decoded)
         return decoded
 
 
-def test():
+def testOne():
     testCourse = classCentralCourse('test')
     testCourse.setUrl(
         'https://www.class-central.com/course/coursera-cloud-computing-concepts-part-1-2717?start=0')
     testCourse.updateReviews()
-    encoder = classCentralEncoder()
+    encoder = classCentralEncoder(True)
     testEncodedJson = encoder.encode(testCourse)
-    print('json works!')
     decoder = classCentralDecoder()
-    decodedCourse = decoder.decodeJson('test.json')
-    print('this works:', isinstance(decodedCourse, classCentralCourse))
+    decodedCourse = decoder.decodeJsonFile('test.json')
+    print('Test one works:', isinstance(decodedCourse, classCentralCourse))
 
-test()
+def testTwo():
+    testCourse = classCentralCourse('test')
+    testCourse.setUrl(
+        'https://www.class-central.com/course/coursera-cloud-computing-concepts-part-1-2717?start=0')
+    testCourse.updateReviews()
+    encoder = classCentralEncoder(fileCreation=False)
+    testEncodedJson = encoder.encode(testCourse)
+    #print('json works!', repr(testEncodedJson))
+    decoder = classCentralDecoder().decodeJsonString(testEncodedJson)
+    #decodedCourse = decoder
+    print('Test two works:', isinstance(decoder, classCentralCourse))
+
+testOne()
+testTwo()
