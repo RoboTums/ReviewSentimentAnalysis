@@ -15,7 +15,7 @@ import pandas as pd
 import re  # regex
 import numpy as np
 from selenium import webdriver
-from selenium.common.exceptions import ElementNotInteractableException, ElementClickInterceptedException
+from selenium.common.exceptions import ElementNotInteractableException, ElementClickInterceptedException, NoSuchElementException
 
 
 class classCentralCourse:
@@ -186,10 +186,13 @@ class classCentralCourse:
 			self.setDescription(description)
 
 			# then we can grab other items (like institution)
-			institution = scraper.find_element_by_xpath('/html/body/div[1]/div[1]/div[4]/div/div[1]/div/p/a[1]').text
+			if scraper.find_element_by_xpath('/html/body/div[1]/div[1]/div[4]/div/div[1]/div/p/a[1]') != None:
+				institution = scraper.find_element_by_xpath('/html/body/div[1]/div[1]/div[4]/div/div[1]/div/p/a[1]').text
+			else:
+				institution = None
 			self.setInstitution(institution)
 			#get provider
-			provider  = scraper.find_element_by_xpath('/html/body/div[1]/div[1]/div[4]/div/div[1]/div/p/a[2]').text
+			provider  = scraper.find_element_by_xpath('/html/body/div[1]/div[1]/div[4]/div/div[2]/div[1]/div/ul/li[1]/a').text
 			self.setProvider(provider)
 			#get tags/ attributes
 			tags =  scraper.find_elements_by_xpath('/html/body/div[1]/div[1]/div[4]/div/div[3]/section[1]/div[3]/div/a')
@@ -201,7 +204,10 @@ class classCentralCourse:
 			relatedCourses = pd.DataFrame(index=range(len(related)),columns=['inst','course','mooc'])
 			for i in range(len(related)):
 				splitted = related[i].text.split('\n')
-				oop = pd.Series([splitted[0], splitted[1],splitted[2][3:]], index=relatedCourses.columns,name='wow')
+				if len(splitted)> 2: 
+					oop = pd.Series([splitted[0], splitted[1],splitted[2][3:]], index=relatedCourses.columns,name='wow')
+				else:
+					oop = pd.Series([None,splitted[0],splitted[1]], index=relatedCourses.columns)
 				relatedCourses.iloc[i,:] = oop.values
 			self.setRelatedCourses(relatedCourses)
 			scraper.close()
@@ -209,6 +215,10 @@ class classCentralCourse:
 			print('popup closed')
 			driver.find_element_by_xpath('/html/body/div[3]/div/div/div[2]/button').click()
 			self.grabDescriptors() #rerun, hopeflly this time it wont popup.
+		except ElementNotInteractableException:
+			pass
+		except NoSuchElementException:
+			self.grabDescriptors() # we run it again, hopefully its just the popup. If its infinite, then that'll suck. 
 		return 
 	def reviewFilter(self, soup):  # returns a list of reviews
 		# print(soup)
