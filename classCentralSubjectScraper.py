@@ -41,9 +41,9 @@ class classCentralSubjectScraper:
     	#print('the course list:',courseList)
     	encoder = classCentralEncoder(fileCreation=False)
     	listToDump = [encoder.encode(course) for course in courseList]
- 		if fileCreate:
- 			with open('courseData.json','w') as file:
- 			json.dump(file,listToDump)
+    	if fileCreate:
+    		with open('courseData.json','w') as file:
+    			json.dump(listToDump,file)
     	return listToDump
     def allCoursesFromJson(self,jsonObj):	
     	decoder = classCentralDecoder()
@@ -91,11 +91,12 @@ class classCentralSubjectScraper:
         return allSubjectUrl
 
     def createSubjectDict(self):
-        courseUrl = self.getUrlList()[:20]
+        courseUrl = self.getUrlList()	
         for i in range(len(courseUrl)):
             courseObj = classCentralCourse(str(i))
             courseObj.setUrl(courseUrl[i])
             courseObj.updateReviews()
+            courseObj.grabDescriptors()
             self.appendToCourseList(courseObj)
         return
 
