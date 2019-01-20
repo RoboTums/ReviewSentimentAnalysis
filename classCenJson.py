@@ -37,7 +37,7 @@ class classCentralEncoder(json.JSONEncoder):
             if self.fileCreation:
                 with open(filename, 'w') as outfile:
                    json.dump(jsonReady, outfile)
-
+                   
             return jsonReady
         else:
             super().default(self, course)
@@ -98,5 +98,5 @@ def testTwo():
     #decodedCourse = decoder
     print('Test two works:', isinstance(decoder, classCentralCourse))
 
-testOne()
-testTwo()
+#testOne()
+#testTwo()
