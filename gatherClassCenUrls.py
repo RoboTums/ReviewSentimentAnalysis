@@ -6,7 +6,7 @@ def main():
 	queen = classCentralSubjectScraper('Niadra')
 	queen.scrapeAllUrlLocations()
 	queen.createSubjectDict()
-	jsonList = queen.allCoursesToJson(fileCreation=True)
+	jsonList = queen.allCoursesToJson(fileCreate=True)
 	print(jsonList)
 	queen.allCoursesFromJson(jsonList)
 	print(queen.getListofCourseObj())
