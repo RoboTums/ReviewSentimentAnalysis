@@ -105,7 +105,6 @@ class classCentralSubjectScraper:
         massUrl = []	
         for subj in range(len(urlLoc)):
             massUrl.extend(self.getCourseUrls(urlLoc[subj]))
-        panUrl = pd.Series(massUrl, index=range(len(massUrl))).unique(
-        ).tolist()        # remove duplicates
+        panUrl = pd.Series(massUrl, index=range(len(massUrl))).unique().tolist()        # remove duplicates
         self.setUrlList(panUrl)
         return	
