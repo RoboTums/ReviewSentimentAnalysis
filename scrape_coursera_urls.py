@@ -1,3 +1,8 @@
+"""
+@author: Daniel Firebanks
+@description: Code to extract all course urls from every subject in coursera. Can do all at the same time or subject specific
+"""
+
 from selenium import webdriver
 import time
 
@@ -22,8 +27,8 @@ subject_dict = {"Business": "https://www.coursera.org/courses?query=&refinementL
 def click_show_more(url):
     """Click button of "show more" until we have seen all results,
     but click on the one that is courses/specializations and not the degrees one"""
+    
     driver.get(url)
-
     while True:
         try:
             button = driver.find_element_by_xpath("//button[@class='ais-InfiniteHits-loadMore']")
