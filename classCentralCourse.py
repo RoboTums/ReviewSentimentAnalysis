@@ -73,7 +73,7 @@ class classCentralCourse:
 		return
 
 	def setDescription(self, newDescript):
-		self.description = newDescript
+		self.descriptionELemention = newDescript
 		return
 
 	def setReviews(self, newReviews):
@@ -196,11 +196,19 @@ class classCentralCourse:
 			attributes = [tag.text for tag in tags]
 			self.setAttrs(attributes)
 			#get related courses
-			related = scraper.find_elements_by_xpath('')
+			related = scraper.find_elements_by_xpath('/html/body/div[1]/div[1]/div[4]/div/div[3]/section[3]/ul/li')
+
+			relatedCourses = pd.DataFrame(index=range(len(related)),columns=['inst','course','mooc'])
+			for i in range(len(related)):
+				splitted = related[i].text.split('\n')
+				oop = pd.Series([splitted[0], splitted[1],splitted[2][3:]], index=relatedCourses.columns,name='wow')
+				relatedCourses.iloc[i,:] = oop.values
+			self.setRelatedCourses(relatedCourses)
 			scraper.close()
 		except ElementClickInterceptedException:
 			print('popup closed')
 			driver.find_element_by_xpath('/html/body/div[3]/div/div/div[2]/button').click()
+			self.grabDescriptors() #rerun, hopeflly this time it wont popup.
 		return 
 	def reviewFilter(self, soup):  # returns a list of reviews
 		# print(soup)
