@@ -1,3 +1,13 @@
+"""
+@author: Daniel Firebanks
+@usage:
+    $ course_url = "https://www.coursera.org/learn/machine-learning"
+    $ course = Course()
+    $ course.get_reviews(10)
+    $ course.build_df()
+    $ course.export_df(file_path)
+"""
+
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -5,22 +15,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
-"""
-Usage:
-    $ course_url = "https://www.coursera.org/learn/machine-learning"
-    $ course = Course()
-    $ course.get_reviews(10)
-    $ course.build_df()
-    $ course.export_df()
-"""
 
-
-class Course:
+class CourseraCourse:
 
     def __init__(self, url):
         """Only requires the URL of the ORIGINAL COURSE PAGE, the rest gets taken care of automatically"""
+
+        self.url = url
+        self.revs_url = self.url + "/reviews"
+        #self.course_name = self.url.split("/")[-1]
+        #print("Course Name:", self.course_name)
+
         self.driver = webdriver.Chrome("/Users/dafirebanks/chromedriver")  # Write the path of your own driver
-        self.driver.get(url)
+        self.driver.get(self.revs_url)
 
         cname, cscore, cabout, cinst, cratings, crevs = get_other_attrs(self.driver)
 
@@ -29,8 +36,6 @@ class Course:
         self.description = cabout
         self.institution = cinst
         self.total_ratings = cratings
-        self.url = url
-        self.revs_url = self.url + "/reviews"
 
         # Total reviews that the course has
         self.total_reviews = crevs
@@ -46,7 +51,7 @@ class Course:
 
     def add_reviews(self, reviews):
         """Takes in a list of reviews, stores all of them and updates the review dictionary for the course"""
-        self.all_reviews.extend(reviews) # Make sure these aren't repeated
+        self.all_reviews.extend(reviews)  # Make sure these aren't repeated
         
         for review in reviews:
             if str(review.stars) not in self.reviews:
@@ -70,25 +75,40 @@ class Course:
         \nNumber of Reviews Extracted: {self.num_reviews} \n"
 
     def get_reviews(self, num_pages=10):
-        self.driver.get(self.revs_url)
+        """Extracts num_pages of results from course"""
         c_allrevs = []
+        print("Starting to get reviews...")
+        
+        # Check if there are reviews first
+        no_reviews_path = "//*[@id='root']/div[1]/div/div[3]/div[2]/p/span"
+        if self.driver.find_elements_by_xpath(no_reviews_path):
+            print(f"{self.name} by {self.institution} has no reviews!")
+        else:
+            # Get the first page of reviews
+            c_allrevs.extend(extract_reviews(self.driver.page_source))
+            pnum = 1
 
-        # Get the first page of reviews
-        c_allrevs.extend(extract_reviews(self.driver.page_source))
-        pnum = 1
+            # Get all the rest
+            for i in range(num_pages):
+                pnum += 1
+                c_allrevs.extend(extract_reviews(click_next_page(self.driver, pnum)))
 
-        # Get all the rest
-        for i in range(num_pages):
-            pnum += 1
-            c_allrevs.extend(extract_reviews(click_next_page(pnum)))
+            self.add_reviews(c_allrevs)
 
-        self.add_reviews(c_allrevs)
+    def print_some_reviews(self, num):
+        for i in range(num):
+            print(self.all_reviews[i])
 
     def build_df(self):
-        pass
+        columns = ["Review Text", "Number of Stars", "Date of Review"]
+        self.df = pd.DataFrame(columns=columns, index=(range(self.num_reviews)))
+        for i in range(self.num_reviews):
+            rev = self.all_reviews[i]
+            series = pd.Series([rev.text, rev.stars, rev.date])
+            self.df.iloc[i, :] = series.values
 
-    def export_df(self):
-        pass
+    def export_df(self, file_path="/Users/dafirebanks/Documents/CourseraReviews"):
+        self.df.to_csv(file_path + self.name + "-" + self.institution + "-reviews.csv")
 
 
 class Review:
@@ -107,6 +127,7 @@ class Review:
 
 
 def extract_reviews(page_link):
+    """Given a reviews page link, it extracts all the reviews on that single result page"""
     soup = BeautifulSoup(page_link, "lxml")
 
     # Get the wrapper of all the the reviews from that page
@@ -128,10 +149,15 @@ def extract_reviews(page_link):
 
         review_list.append(Review(rev_stars, rev_text, rev_date))
 
+    return review_list
+
 
 def get_other_attrs(driver):
     """Gets all attributes of a course, given a driver with an opened page link"""
     about, score, name, inst, total_revs, total_ratings = None, None, None, None, None, None
+
+    print("Getting other attributes...")
+
     try:
         about = driver.find_element_by_xpath("//*[@id='root']/div[1]/div/div[2]/div/div/span[1]/span[1]").text
         score = driver.find_element_by_xpath("//*[@id='root']/div[1]/div/div[1]/div/div[2]/span").text
@@ -142,6 +168,8 @@ def get_other_attrs(driver):
                 0]
         total_ratings = \
             driver.find_element_by_xpath("//*[@id='root']/div[1]/div/div[1]/div/div[2]/div[2]/span").text.split(" ")[0]
+
+        print("Success in getting other attributes!")
 
     except Exception as e:
         print("Some attribute is missing!!!")
@@ -162,6 +190,8 @@ def click_next_page(driver, page_num):
                                                                           "//*[@id='root']/div[1]/div/div[4]/div[2]/p/span")))
         print("Got it!")
         print()
+        return driver.page_source
 
     except:
         print(f"Result page {page_num} did not load, moving on to the next one...")
+        click_next_page(driver, page_num=page_num+1)
