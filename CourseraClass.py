@@ -2,7 +2,7 @@
 @author: Daniel Firebanks
 @usage:
     $ course_url = "https://www.coursera.org/learn/machine-learning"
-    $ course = Course()
+    $ course = Course(course_url, driver_path="Write_here")
     $ course.get_reviews(10)
     $ course.build_reviews_df()
     $ course.export_reviews_df(file_path)
