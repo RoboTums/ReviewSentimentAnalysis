@@ -10,12 +10,9 @@ def main():
     course = CourseraCourse(course_url)
     course.get_info()
     course.get_reviews(10)
-
-    # Check if there are reviews first
-    if len(course.all_reviews) != 0:
-        course.print_some_reviews(20)
-        course.build_df()
-        course.export_df(file_path="/Users/dafirebanks/Documents/") # Works all the way till here!
-
+    course.print_some_reviews(20)
+    course.build_df()
+    course.export_df(file_path="Insert_file_path_here!")
+    course.build_json(file_path="Optional")  # Works all the way till here!
 
 main()

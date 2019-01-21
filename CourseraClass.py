@@ -4,8 +4,9 @@
     $ course_url = "https://www.coursera.org/learn/machine-learning"
     $ course = Course()
     $ course.get_reviews(10)
-    $ course.build_df()
-    $ course.export_df(file_path)
+    $ course.build_reviews_df()
+    $ course.export_reviews_df(file_path)
+    $ course.build_course_json(optional_file_path)
 """
 
 import pandas as pd
@@ -14,7 +15,7 @@ from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-
+import json
 
 class CourseraCourse:
 
@@ -41,23 +42,24 @@ class CourseraCourse:
         self.total_reviews = crevs
 
         # {Number of stars: List of all reviews with those stars}
-        self.reviews = dict()
+        self.reviews_dict = dict()
         self.all_reviews = []
 
         # Number of reviews we have
         self.num_reviews = 0
 
         self.df = None
+        self.json = None
 
     def add_reviews(self, reviews):
         """Takes in a list of reviews, stores all of them and updates the review dictionary for the course"""
         self.all_reviews.extend(reviews)  # Make sure these aren't repeated
         
         for review in reviews:
-            if str(review.stars) not in self.reviews:
-                self.reviews[str(review.stars)] = [review] 
+            if str(review.stars) not in self.reviews_dict:
+                self.reviews_dict[str(review.stars)] = [review]
             else:
-                self.reviews[str(review.stars)].append(review)
+                self.reviews_dict[str(review.stars)].append(review)
 
             self.num_reviews += 1
     
@@ -95,20 +97,46 @@ class CourseraCourse:
 
             self.add_reviews(c_allrevs)
 
-    def print_some_reviews(self, num):
-        for i in range(num):
-            print(self.all_reviews[i])
+    def has_reviews(self):
+        if len(self.all_reviews) != 0:
+            return True
+        print("No reviews found!")
+        return False
 
-    def build_df(self):
+    def print_some_reviews(self, num):
+        """Prints num reviews"""
+        if self.has_reviews():
+            for i in range(num):
+                print(self.all_reviews[i])
+
+    def build_reviews_df(self):
+        """Builds pandas dataframe of reviews given review objects"""
         columns = ["Review Text", "Number of Stars", "Date of Review"]
         self.df = pd.DataFrame(columns=columns, index=(range(self.num_reviews)))
-        for i in range(self.num_reviews):
-            rev = self.all_reviews[i]
-            series = pd.Series([rev.text, rev.stars, rev.date])
-            self.df.iloc[i, :] = series.values
 
-    def export_df(self, file_path):
-        self.df.to_csv(file_path + self.name + "-" + self.institution + "-reviews.csv")
+        if self.has_reviews()
+            for i in range(self.num_reviews):
+                rev = self.all_reviews[i]
+                series = pd.Series([rev.text, rev.stars, rev.date])
+                self.df.iloc[i, :] = series.values
+
+    def export_reviews_df(self, file_path):
+        """Converts pandas dataframe to csv and stores it in specified path"""
+        if self.has_reviews():
+            self.df.to_csv(file_path + self.name + "-" + self.institution + "-reviews.csv")
+
+    def build_course_json(self, file_path=None):
+        """Builds a JSON object containing all CourseraCourse attributes, and stores it in a json file if given file_path"""
+        data = {"Name": self.name, "Institution": self.institution, "Score": self.score, "URL": self.url,
+                "Reviews URL": self.revs_url, "All Reviews": self.df.to_json(), "Reviews by category": self.reviews_dict,
+                "Number of reviews we have": self.num_reviews, "Total number of reviews on page": self.total_reviews,
+                "Total number of ratings on page": self.total_ratings}
+
+        if file_path:
+            with open(file_path + self.name + "-" + self.institution + "json-obj.json") as outfile:
+                json.dump(data, outfile)
+        else:
+            self.json = json.dumps(data)
 
 
 class Review:
