@@ -7,6 +7,8 @@
     $ course.build_reviews_df()
     $ course.export_reviews_df(file_path)
     $ course.build_course_json(optional_file_path)
+    $ // If wanting to build a course object from a pre-existing JSON file, use
+    $ course = unpack_json(json_file_path)
 """
 
 import pandas as pd
@@ -19,42 +21,61 @@ import json
 
 class CourseraCourse:
 
-    def __init__(self, url):
+    def __init__(self, url, driver_path=None, from_json=False):
         """Only requires the URL of the ORIGINAL COURSE PAGE, the rest gets taken care of automatically"""
 
         self.url = url
         self.revs_url = self.url + "/reviews"
-        #self.course_name = self.url.split("/")[-1]
-        #print("Course Name:", self.course_name)
 
-        self.driver = webdriver.Chrome("/Users/dafirebanks/chromedriver")  # Write the path of your own driver
-        self.driver.get(self.revs_url)
+        # Initialize this if the course data is not being loaded from json
+        if not from_json:
+            self.driver = webdriver.Chrome(driver_path)  # Write the path of your own driver
+            self.driver.get(self.revs_url)
 
-        cname, cscore, cabout, cinst, cratings, crevs = get_other_attrs(self.driver)
+            cname, cscore, cabout, cinst, cratings, crevs = get_other_attrs(self.driver)
 
-        self.name = cname
-        self.score = cscore
-        self.description = cabout
-        self.institution = cinst
-        self.total_ratings = cratings
+            self.name = cname
+            self.score = cscore
+            self.description = cabout
+            self.institution = cinst
+            self.total_ratings = cratings
 
-        # Total reviews that the course has
-        self.total_reviews = crevs
+            # Total reviews that the course has
+            self.total_reviews = crevs
 
-        # {Number of stars: List of all reviews with those stars}
-        self.reviews_dict = dict()
-        self.all_reviews = []
+            # {Number of stars: List of all reviews with those stars}
+            self.reviews_dict = dict()
+            self.all_reviews = []
 
-        # Number of reviews we have
-        self.num_reviews = 0
+            # Number of reviews we have
+            self.num_reviews = 0
 
-        self.df = None
-        self.json = None
+            self.df = None
+            self.json = None
+        else:
+            self.name = None
+            self.score = None
+            self.description = None
+            self.institution = None
+            self.total_ratings = None
+
+            # Total reviews that the course has
+            self.total_reviews = None
+
+            # {Number of stars: List of all reviews with those stars}
+            self.reviews_dict = dict()
+            self.all_reviews = []
+
+            # Number of reviews we have
+            self.num_reviews = 0
+
+            self.df = None
+            self.json = None
 
     def add_reviews(self, reviews):
         """Takes in a list of reviews, stores all of them and updates the review dictionary for the course"""
         self.all_reviews.extend(reviews)  # Make sure these aren't repeated
-        
+
         for review in reviews:
             if str(review.stars) not in self.reviews_dict:
                 self.reviews_dict[str(review.stars)] = [review]
@@ -62,11 +83,11 @@ class CourseraCourse:
                 self.reviews_dict[str(review.stars)].append(review)
 
             self.num_reviews += 1
-    
+
     def get_info(self):
         """Return course information"""
         return self.__str__()
-    
+
     def __str__(self):
         return f"Name: {self.name} \
         \nScore: {self.score} \
@@ -80,7 +101,7 @@ class CourseraCourse:
         """Extracts num_pages of results from course"""
         c_allrevs = []
         print("Starting to get reviews...")
-        
+
         # Check if there are reviews first
         no_reviews_path = "//*[@id='root']/div[1]/div/div[3]/div[2]/p/span"
         if self.driver.find_elements_by_xpath(no_reviews_path):
@@ -127,9 +148,16 @@ class CourseraCourse:
 
     def build_course_json(self, file_path=None):
         """Builds a JSON object containing all CourseraCourse attributes, and stores it in a json file if given file_path"""
-        data = {"Name": self.name, "Institution": self.institution, "Score": self.score, "URL": self.url,
-                "Reviews URL": self.revs_url, "All Reviews": self.df.to_json(), "Reviews by category": self.reviews_dict,
-                "Number of reviews we have": self.num_reviews, "Total number of reviews on page": self.total_reviews,
+        data = {"Name": self.name,
+                "Institution": self.institution,
+                "Description": self.description,
+                "Score": self.score,
+                "URL": self.url,
+                "Reviews URL": self.revs_url,
+                "All Reviews": self.df.to_json(),
+                "Reviews by category": self.reviews_dict,
+                "Number of reviews we have": self.num_reviews,
+                "Total number of reviews on page": self.total_reviews,
                 "Total number of ratings on page": self.total_ratings}
 
         if file_path:
@@ -144,15 +172,36 @@ class Review:
         self.stars = stars
         self.text = text
         self.date = date
-    
+
     def __str__(self):
         return f"Number of Stars: {self.stars} \
         \nDate of Review: {self.date} \
         \nText of Review: '{self.text}'\n"
 
+""" HELPER JSON FUNCTION!!!!!!!!"""
+
+def unpack_json(json_file):
+    """Returns a CourseraCourse object given a JSON file"""
+
+    try:
+        with open(json_file) as infile:
+            data = json.load(infile)
+            course = CourseraCourse(data["URL"], from_json=True)
+            course.name = data["Name"]
+            course.description = data["Description"]
+            course.institution = data["Institution"]
+            course.score = data["Score"]
+            course.reviews_dict = json.load(data["Reviews by category"])
+            course.all_reviews = list(course.reviews_dict.values())
+            course.num_reviews = data["Number of reviews we have"]
+            course.total_reviews = data["Total number of reviews on page"]
+            course.total_ratings = data["Total number of ratings on page"]
+            return course
+    except Exception as e:
+        print("Please insert a valid JSON file type!")
+        print(e)
 
 """ HELPER DRIVER FUNCTIONS BELOW!!!!!!!"""
-
 
 def extract_reviews(page_link):
     """Given a reviews page link, it extracts all the reviews on that single result page"""
