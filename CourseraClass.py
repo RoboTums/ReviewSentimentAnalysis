@@ -107,7 +107,7 @@ class CourseraCourse:
             series = pd.Series([rev.text, rev.stars, rev.date])
             self.df.iloc[i, :] = series.values
 
-    def export_df(self, file_path="/Users/dafirebanks/Documents/CourseraReviews"):
+    def export_df(self, file_path):
         self.df.to_csv(file_path + self.name + "-" + self.institution + "-reviews.csv")
 
 
