@@ -15,6 +15,13 @@ Our Scripts follow the following structure:
 ###  Tools Used:
 - Vader Sentiment, Selenium, lxml, requests, pandas, numpy.
 
+## How to use:
+
+For an interactive environment, for webscraping, open:
+``jupyter lab coursera_url_scrapper.ipynb	scrapeClassCen.ipynb ``
+
+For an interactive review sentiment analysis, open:
+``jupyter lab Review_Sentiment_Analysis.ipynb	coursera_reviews_scraper.ipynb ``
 
 
 ### Citation:
